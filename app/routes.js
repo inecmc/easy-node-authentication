@@ -88,6 +88,18 @@ module.exports = function(app, passport) {
                 failureRedirect : '/'
             }));
 
+    // line -----------------------------------
+
+        // send to line to do the authentication
+        app.get('/auth/line', passport.authenticate('line'));
+
+        // the callback after line has authenticated the user
+        app.get('/auth/line/callback',
+            passport.authenticate('line', {
+                successRedirect : '/profile',
+                failureRedirect : '/'
+            }));
+
 // =============================================================================
 // AUTHORIZE (ALREADY LOGGED IN / CONNECTING OTHER SOCIAL ACCOUNT) =============
 // =============================================================================
@@ -139,6 +151,18 @@ module.exports = function(app, passport) {
                 failureRedirect : '/'
             }));
 
+    // line -----------------------------------
+
+        // send to line to do the authentication
+        app.get('/connect/line', passport.authorize('line'));
+
+        // the callback after line has authorized the user
+        app.get('/connect/line/callback',
+            passport.authorize('line', {
+                successRedirect : '/profile',
+                failureRedirect : '/'
+            }));
+
 // =============================================================================
 // UNLINK ACCOUNTS =============================================================
 // =============================================================================
@@ -178,6 +202,15 @@ module.exports = function(app, passport) {
     app.get('/unlink/google', isLoggedIn, function(req, res) {
         var user          = req.user;
         user.google.token = undefined;
+        user.save(function(err) {
+            res.redirect('/profile');
+        });
+    });
+
+    // line -----------------------------------
+    app.get('/unlink/line', isLoggedIn, function(req, res) {
+        var user          = req.user;
+        user.line.token = undefined;
         user.save(function(err) {
             res.redirect('/profile');
         });

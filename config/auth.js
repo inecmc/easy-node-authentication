@@ -21,6 +21,12 @@ module.exports = {
         'clientID'         : 'your-secret-clientID-here',
         'clientSecret'     : 'your-client-secret-here',
         'callbackURL'      : 'http://localhost:8080/auth/google/callback'
+    },
+
+    'lineAuth' : {
+        'channelID'         : 'your-secret-channelID-here',
+        'channelSecret'     : 'your-channel-secret-here',
+        'callbackURL'       : 'http://localhost:9999/auth/line/callback'
     }
 
 };

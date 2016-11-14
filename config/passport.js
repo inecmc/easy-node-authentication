@@ -3,6 +3,7 @@ var LocalStrategy    = require('passport-local').Strategy;
 var FacebookStrategy = require('passport-facebook').Strategy;
 var TwitterStrategy  = require('passport-twitter').Strategy;
 var GoogleStrategy   = require('passport-google-oauth').OAuth2Strategy;
+var LineStrategy     = require('passport-line').Strategy;
 
 // load up the user model
 var User       = require('../app/models/user');
@@ -356,6 +357,82 @@ module.exports = function(passport) {
                 user.google.token = token;
                 user.google.name  = profile.displayName;
                 user.google.email = (profile.emails[0].value || '').toLowerCase(); // pull the first email
+
+                user.save(function(err) {
+                    if (err)
+                        return done(err);
+                        
+                    return done(null, user);
+                });
+
+            }
+
+        });
+
+    }));
+
+    // =========================================================================
+    // LINE ====================================================================
+    // =========================================================================
+    passport.use(new LineStrategy({
+
+        channelID        : configAuth.lineAuth.channelID,
+        channelSecret    : configAuth.lineAuth.channelSecret,
+        callbackURL     : configAuth.lineAuth.callbackURL,
+        passReqToCallback : true // allows us to pass in the req from our route (lets us check if a user is logged in or not)
+
+    },
+    function(req, token, refreshToken, profile, done) {
+
+        // asynchronous
+        process.nextTick(function() {
+
+            // check if the user is already logged in
+            if (!req.user) {
+
+                User.findOne({ 'line.id' : profile.id }, function(err, user) {
+                    if (err)
+                        return done(err);
+
+                    if (user) {
+
+                        // if there is a user id already but no token (user was linked at one point and then removed)
+                        if (!user.line.token) {
+                            user.line.token = token;
+                            user.google.displayName  = profile.displayName;
+
+                            user.save(function(err) {
+                                if (err)
+                                    return done(err);
+                                    
+                                return done(null, user);
+                            });
+                        }
+
+                        return done(null, user);
+                    } else {
+                        var newUser          = new User();
+
+                        newUser.line.id    = profile.id;
+                        newUser.line.token = token;
+                        newUser.line.displayName  = profile.displayName;
+
+                        newUser.save(function(err) {
+                            if (err)
+                                return done(err);
+                                
+                            return done(null, newUser);
+                        });
+                    }
+                });
+
+            } else {
+                // user already exists and is logged in, we have to link accounts
+                var user               = req.user; // pull the user out of the session
+
+                user.line.id    = profile.id;
+                user.line.token = token;
+                user.line.displayName  = profile.displayName;
 
                 user.save(function(err) {
                     if (err)
